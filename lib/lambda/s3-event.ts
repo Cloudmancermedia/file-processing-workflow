@@ -1,16 +1,25 @@
-exports.lambdaHandler = async (event) => {
-  // Extract bucket name and file key from the event
-  const bucket = event.Records[0].s3.bucket.name;
-  const key = event.Records[0].s3.object.key;
+import { S3Event, Context, S3Handler } from 'aws-lambda';
+import { StepFunctionsClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 
-  // Start the Step Function execution
-  const stepfunctions = new AWS.StepFunctions();
-  const params = {
-      stateMachineArn: process.env.STATE_MACHINE_ARN,
-      input: JSON.stringify({ bucket, key }),
-  };
+const stepfunctions = new StepFunctionsClient({});
 
-  await stepfunctions.startExecution(params).promise();
+export const handler: S3Handler = async (event: S3Event, context: Context): Promise<void> => {
+  try {
+    const record = event.Records[0];
+    const bucket = record.s3.bucket.name;
+    const key = record.s3.object.key;
 
-  return { statusCode: 200, body: 'Step Function started.' };
+    const input = JSON.stringify({ bucket, key });
+    const params = {
+      stateMachineArn: process.env.STATE_MACHINE_ARN as string,
+      input,
+    };
+
+    await stepfunctions.send(new StartExecutionCommand(params));
+
+    console.log('Step Function started successfully.');
+  } catch (error) {
+    console.error('Error starting Step Function execution', error);
+    throw new Error('Error starting Step Function execution');
+  }
 };

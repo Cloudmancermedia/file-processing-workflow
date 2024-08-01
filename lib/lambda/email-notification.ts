@@ -1,17 +1,29 @@
-const AWS = require('aws-sdk');
-const sns = new AWS.SNS();
+import { SNS } from '@aws-sdk/client-sns';
+import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
 
-exports.lambdaHandler = async (event) => {
-    const topicArn = process.env.TOPIC_ARN;
-    const message = 'File processing completed successfully.';
+const sns = new SNS({});
 
-    // Publish a notification to the SNS topic
+export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+  const topicArn = process.env.TOPIC_ARN as string;
+  const message = 'File processing completed successfully.';
+
+  try {
     const params = {
-        Message: message,
-        TopicArn: topicArn,
+      Message: message,
+      TopicArn: topicArn,
     };
 
-    await sns.publish(params).promise();
+    await sns.publish(params);
 
-    return { status: 'Notification sent' };
+    return {
+      statusCode: 200,
+      body: 'Notification sent',
+    };
+  } catch (error) {
+    console.error('Notification error:', error);
+    return {
+      statusCode: 500,
+      body: 'Notification failed',
+    };
+  }
 };
