@@ -1,22 +1,41 @@
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+import { DynamoDB } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
 
-exports.lambdaHandler = async (event) => {
-    const { data } = event;
-    const tableName = process.env.TABLE_NAME;
+const dynamoDbClient = new DynamoDB({});
+const ddbDocClient = DynamoDBDocumentClient.from(dynamoDbClient);
 
-    // Update the DynamoDB table with the transformed data
+interface TransformedData {
+  fileId: string;
+  [key: string]: string;
+}
+
+export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+  const { data } = JSON.parse(event.body || '{}');
+  const tableName = process.env.TABLE_NAME as string;
+
+  try {
     for (const item of data) {
-        const params = {
-            TableName: tableName,
-            Item: {
-                fileId: item.fileId,
-                ...item
-            }
-        };
+      const params = {
+        TableName: tableName,
+        Item: {
+          fileId: item.fileId,
+          ...item,
+        },
+      };
 
-        await dynamodb.put(params).promise();
+      await ddbDocClient.send(new PutCommand(params));
     }
 
-    return { status: 'Data inserted successfully' };
+    return {
+      statusCode: 200,
+      body: 'Data inserted successfully',
+    };
+  } catch (error) {
+    console.error('Database update error:', error);
+    return {
+      statusCode: 500,
+      body: 'Database update failed',
+    };
+  }
 };
