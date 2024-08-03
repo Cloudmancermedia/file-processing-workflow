@@ -9,7 +9,7 @@ interface ExtractedData {
   [key: string]: string;
 }
 
-export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
   const { bucket, key } = JSON.parse(event.body || '{}');
 
   try {

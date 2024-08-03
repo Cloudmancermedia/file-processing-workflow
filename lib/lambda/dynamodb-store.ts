@@ -10,7 +10,7 @@ interface TransformedData {
   [key: string]: string;
 }
 
-export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
   const { data } = JSON.parse(event.body || '{}');
   const tableName = process.env.TABLE_NAME as string;
 
