@@ -3,7 +3,7 @@ import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
 
 const sns = new SNS({});
 
-export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
   const topicArn = process.env.TOPIC_ARN as string;
   const message = 'File processing completed successfully.';
 

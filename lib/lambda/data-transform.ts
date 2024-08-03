@@ -1,17 +1,29 @@
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
+import { APIGatewayProxyHandler } from 'aws-lambda';
 
 interface ExtractedData {
-  [key: string]: string;
+  [key: string]: string | number;
 }
 
-export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+// Helper function to format data for DynamoDB
+const formatForDynamoDB = (item: ExtractedData) => {
+  const formattedItem: { [key: string]: { S?: string; N?: string } } = {};
+
+  for (const key in item) {
+    if (typeof item[key] === 'number') {
+      formattedItem[key] = { N: item[key].toString() };
+    } else if (typeof item[key] === 'string') {
+      formattedItem[key] = { S: item[key].toLowerCase() }; // Convert to lowercase
+    }
+  }
+
+  return formattedItem;
+};
+
+export const handler: APIGatewayProxyHandler = async (event) => {
   const { data } = JSON.parse(event.body || '{}');
 
   try {
-    const transformedData = data.map((item: ExtractedData) => ({
-      ...item,
-      transformedField: item.someField.toUpperCase(), // Example transformation
-    }));
+    const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {
       statusCode: 200,

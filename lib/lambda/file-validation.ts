@@ -3,7 +3,7 @@ import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
 
 const s3 = new S3({});
 
-export const lambdaHandler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
   const { bucket, key } = JSON.parse(event.body || '{}');
 
   try {
