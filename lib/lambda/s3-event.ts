@@ -3,7 +3,7 @@ import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 
 const stepfunctions = new SFNClient({});
 
-export const handler: S3Handler = async (event: S3Event, context: Context): Promise<void> => {
+export const handler: S3Handler = async (event: S3Event, context: Context): Promise<any> => {
   try {
     const record = event.Records[0];
     const bucket = record.s3.bucket.name;
@@ -18,6 +18,10 @@ export const handler: S3Handler = async (event: S3Event, context: Context): Prom
     await stepfunctions.send(new StartExecutionCommand(params));
 
     console.log('Step Function started successfully.');
+    return {
+      statusCode: 200,
+      body: { bucket, key },
+    }
   } catch (error) {
     console.error('Error starting Step Function execution', error);
     throw new Error('Error starting Step Function execution');
