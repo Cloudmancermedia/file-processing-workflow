@@ -1,6 +1,6 @@
 import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { AttributeType, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
-import { Code, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { Code, Function, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Bucket, EventType } from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Topic } from 'aws-cdk-lib/aws-sns';
@@ -8,6 +8,7 @@ import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import { DefinitionBody, StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
 import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 
 export class FileProcessingWorkflowStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -23,7 +24,7 @@ export class FileProcessingWorkflowStack extends Stack {
     // SNS Topic for notifications
     const notificationTopic = new Topic(this, 'NotificationTopic');
     // add email sub when ready to deploy
-    notificationTopic.addSubscription(new EmailSubscription(''));
+    // notificationTopic.addSubscription(new EmailSubscription(''));
 
     // DynamoDB Table
     const table = new TableV2(this, 'DataTable', {
@@ -32,19 +33,25 @@ export class FileProcessingWorkflowStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    const layer = new LayerVersion(
+      this,
+      "Layer",
+      {
+        code: Code.fromAsset("lib/layers"),
+        compatibleRuntimes: [ Runtime.NODEJS_LATEST ],
+        layerVersionName: "NodeJsLayer"
+      }
+    )
+
     // Lambda function to handle S3 events
-    const s3EventHandler = new Function(this, 'S3EventHandler', {
+    const s3EventHandler = new NodejsFunction(this, 'S3EventHandler', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 's3-event.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/s3-event.ts',
       environment: {
         BUCKET_NAME: fileUploadBucket.bucketName,
         TOPIC_ARN: notificationTopic.topicArn,
       },
-    });
-
-    // Grant S3 permissions to the Lambda function
-    fileUploadBucket.grantReadWrite(s3EventHandler);
+    });;
 
     // Add S3 event notification to the bucket
     // make sure to import the correct LambdaDestination (from s3-notifications) as there are multiple constructs with the same name
@@ -54,28 +61,32 @@ export class FileProcessingWorkflowStack extends Stack {
     );
 
     // Define Lambda functions for each step
-    const fileValidationFunction = new Function(this, 'FileValidationFunction', {
+    const fileValidationFunction = new NodejsFunction(this, 'FileValidationFunction', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 'file-validation.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/file-validation.ts',
     });
 
-    const dataExtractionFunction = new Function(this, 'DataExtractionFunction', {
+    const dataExtractionFunction = new NodejsFunction(this, 'DataExtractionFunction', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 'data-extraction.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/data-extraction.ts',
+      layers: [
+        layer
+      ],
+      bundling: {
+        externalModules: [
+          'csv-parser'
+        ]
+      }
     });
 
-    const dataTransformationFunction = new Function(this, 'DataTransformationFunction', {
+    const dataTransformationFunction = new NodejsFunction(this, 'DataTransformationFunction', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 'data-transformation.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/data-transform.ts',
     });
 
-    const databaseUpdateFunction = new Function(this, 'DatabaseUpdateFunction', {
+    const databaseUpdateFunction = new NodejsFunction(this, 'DatabaseUpdateFunction', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 'dynamodb-store.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/dynamodb-store.ts',
       environment: {
         TABLE_NAME: table.tableName,
       },
@@ -83,10 +94,9 @@ export class FileProcessingWorkflowStack extends Stack {
 
     table.grantReadWriteData(databaseUpdateFunction);
 
-    const notificationFunction = new Function(this, 'NotificationFunction', {
+    const notificationFunction = new NodejsFunction(this, 'NotificationFunction', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 'email-notification.handler',
-      code: Code.fromAsset('lib/lambda'),
+      entry: 'lib/lambda/email-notification.ts',
       environment: {
         TOPIC_ARN: notificationTopic.topicArn,
       },
