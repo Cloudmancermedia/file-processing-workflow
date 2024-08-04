@@ -1,9 +1,21 @@
 import { S3 } from '@aws-sdk/client-s3';
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
+import { APIGatewayProxyHandler, APIGatewayProxyEvent, Handler } from 'aws-lambda';
 
 const s3 = new S3({});
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+// Define the custom event type for the Lambda handler
+interface S3Event {
+  bucket: string;
+  key: string;
+}
+
+// Define the custom result type for the Lambda handler
+interface ValidationResult {
+  statusCode: number;
+  body: string;
+}
+
+export const handler: Handler<ValidationResult> = async (event: ValidationResult) => {
   const { bucket, key } = JSON.parse(event.body || '{}');
 
   try {
