@@ -1,7 +1,8 @@
 import { S3 } from '@aws-sdk/client-s3';
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
+import { Handler } from 'aws-lambda';
 import { csvParser } from 'csv-parser';
 import { Readable } from 'stream';
+import { ValidationResult } from './shared/types';
 
 const s3 = new S3({});
 
@@ -9,10 +10,11 @@ interface ExtractedData {
   [key: string]: string;
 }
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
-  const { bucket, key } = JSON.parse(event.body || '{}');
-
+export const handler: Handler<ValidationResult> = async (event: ValidationResult) => {
+  console.log('Event:', event);
+  
   try {
+    const { bucket, key } = event;
     const params = {
       Bucket: bucket,
       Key: key,
@@ -33,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ bucket, key, data: extractedData }),
+      body: { data: extractedData },
     };
   } catch (error) {
     console.error('Data extraction error:', error);
