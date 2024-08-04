@@ -35,7 +35,7 @@ export class FileProcessingWorkflowStack extends Stack {
     // Lambda function to handle S3 events
     const s3EventHandler = new Function(this, 'S3EventHandler', {
       runtime: Runtime.NODEJS_LATEST,
-      handler: 's3_event_handler.handler',
+      handler: 's3-event.handler',
       code: Code.fromAsset('lib/lambda'),
       environment: {
         BUCKET_NAME: fileUploadBucket.bucketName,
