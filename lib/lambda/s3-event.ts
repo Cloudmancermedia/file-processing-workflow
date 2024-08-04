@@ -1,7 +1,7 @@
 import { S3Event, Context, S3Handler } from 'aws-lambda';
-import { StepFunctionsClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
+import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
 
-const stepfunctions = new StepFunctionsClient({});
+const stepfunctions = new SFNClient({});
 
 export const handler: S3Handler = async (event: S3Event, context: Context): Promise<void> => {
   try {

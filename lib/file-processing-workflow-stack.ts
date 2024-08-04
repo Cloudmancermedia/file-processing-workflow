@@ -41,23 +41,6 @@ export class FileProcessingWorkflowStack extends Stack {
         compatibleRuntimes: [ Runtime.NODEJS_LATEST ],
         layerVersionName: "NodeJsLayer"
       }
-    )
-
-    // Lambda function to handle S3 events
-    const s3EventHandler = new NodejsFunction(this, 'S3EventHandler', {
-      runtime: Runtime.NODEJS_LATEST,
-      entry: 'lib/lambda/s3-event.ts',
-      environment: {
-        BUCKET_NAME: fileUploadBucket.bucketName,
-        TOPIC_ARN: notificationTopic.topicArn,
-      },
-    });;
-
-    // Add S3 event notification to the bucket
-    // make sure to import the correct LambdaDestination (from s3-notifications) as there are multiple constructs with the same name
-    fileUploadBucket.addEventNotification(
-      EventType.OBJECT_CREATED,
-      new LambdaDestination(s3EventHandler) 
     );
 
     // Define Lambda functions for each step
@@ -131,13 +114,30 @@ export class FileProcessingWorkflowStack extends Stack {
     });
 
     // Define the Step Functions state machine
-    new StateMachine(this, 'FileProcessingStateMachine', {
+    const stateMachine = new StateMachine(this, 'FileProcessingStateMachine', {
       definitionBody: DefinitionBody.fromChainable(validateFileTask
       .next(dataExtractionTask)
       .next(dataTransformationTask)
       .next(databaseUpdateTask)
       .next(notificationTask)
       ),
+     });
+
+    // Lambda function to handle S3 events
+    const s3EventHandler = new NodejsFunction(this, 'S3EventHandler', {
+      runtime: Runtime.NODEJS_LATEST,
+      entry: 'lib/lambda/s3-event.ts',
+      environment: {
+        STATE_MACHINE_ARN: stateMachine.stateMachineArn
+      },
     });
+
+    // Add S3 event notification to the bucket
+    // make sure to import the correct LambdaDestination (from s3-notifications) as there are multiple constructs with the same name
+    fileUploadBucket.addEventNotification(
+      EventType.OBJECT_CREATED,
+      new LambdaDestination(s3EventHandler) 
+    );
+    stateMachine.grantStartExecution(s3EventHandler);
   }
 }

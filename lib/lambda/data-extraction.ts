@@ -1,6 +1,6 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
-import * as csvParser from 'csv-parser';
+import { csvParser } from 'csv-parser';
 import { Readable } from 'stream';
 
 const s3 = new S3({});
