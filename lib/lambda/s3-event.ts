@@ -19,7 +19,6 @@ export const handler: S3Handler = async (event: S3Event, context: Context): Prom
 
     console.log('Step Function started successfully.');
     return {
-      statusCode: 200,
       body: { bucket, key },
     }
   } catch (error) {

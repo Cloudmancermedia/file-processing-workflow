@@ -1,24 +1,14 @@
 import { S3 } from '@aws-sdk/client-s3';
-import { APIGatewayProxyHandler, APIGatewayProxyEvent, Handler } from 'aws-lambda';
+import { Handler } from 'aws-lambda';
+import { ValidationResult } from './shared/types';
 
 const s3 = new S3({});
 
-// Define the custom event type for the Lambda handler
-interface S3Event {
-  bucket: string;
-  key: string;
-}
-
-// Define the custom result type for the Lambda handler
-interface ValidationResult {
-  statusCode: number;
-  body: string;
-}
-
 export const handler: Handler<ValidationResult> = async (event: ValidationResult) => {
-  const { bucket, key } = JSON.parse(event.body || '{}');
-
+  console.log('Event:', event);
+  
   try {
+    const { bucket, key } = event;
     const params = {
       Bucket: bucket,
       Key: key,
@@ -49,15 +39,11 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
     }
 
     return {
-      statusCode: 200,
-      body: JSON.stringify({ bucket, key }),
+      body: { bucket, key }
     };
 
   } catch (error) {
     console.error('File validation error:', error);
-    return {
-      statusCode: 400,
-      body: 'File validation failed',
-    };
+    throw new Error('File validation failed');
   }
 };

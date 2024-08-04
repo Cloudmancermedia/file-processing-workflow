@@ -5,7 +5,7 @@ import { Bucket, EventType } from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
-import { DefinitionBody, StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
+import { DefinitionBody, Fail, StateMachine } from 'aws-cdk-lib/aws-stepfunctions';
 import { LambdaInvoke } from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -61,13 +61,14 @@ export class FileProcessingWorkflowStack extends Stack {
         ]
       }
     });
+    fileUploadBucket.grantRead(dataExtractionFunction);
 
     const dataTransformationFunction = new NodejsFunction(this, 'DataTransformationFunction', {
       runtime: Runtime.NODEJS_LATEST,
       entry: 'lib/lambda/data-transform.ts',
     });
 
-    const databaseUpdateFunction = new NodejsFunction(this, 'DatabaseUpdateFunction', {
+    const dynamoDbStoreFunction = new NodejsFunction(this, 'DynamoDbStoreFunction', {
       runtime: Runtime.NODEJS_LATEST,
       entry: 'lib/lambda/dynamodb-store.ts',
       environment: {
@@ -75,7 +76,7 @@ export class FileProcessingWorkflowStack extends Stack {
       },
     });
 
-    table.grantReadWriteData(databaseUpdateFunction);
+    table.grantReadWriteData(dynamoDbStoreFunction);
 
     const notificationFunction = new NodejsFunction(this, 'NotificationFunction', {
       runtime: Runtime.NODEJS_LATEST,
@@ -103,8 +104,8 @@ export class FileProcessingWorkflowStack extends Stack {
       outputPath: '$.Payload',
     });
 
-    const databaseUpdateTask = new LambdaInvoke(this, 'Database Update', {
-      lambdaFunction: databaseUpdateFunction,
+    const dynamoDbStoreTask = new LambdaInvoke(this, 'DynamoDb Store', {
+      lambdaFunction: dynamoDbStoreFunction,
       outputPath: '$.Payload',
     });
 
@@ -113,15 +114,70 @@ export class FileProcessingWorkflowStack extends Stack {
       outputPath: '$.Payload',
     });
 
+    // Define unique fail states
+    const fileValidationFail = new Fail(this, 'FileValidationFail', {
+      cause: 'File validation failed',
+      error: 'FileValidationError',
+    });
+
+    const dataExtractionFail = new Fail(this, 'DataExtractionFail', {
+      cause: 'Data extraction failed',
+      error: 'DataExtractionError',
+    });
+
+    const dataTransformationFail = new Fail(this, 'DataTransformationFail', {
+      cause: 'Data transformation failed',
+      error: 'DataTransformationError',
+    });
+
+    const dynamoDbStoreFail = new Fail(this, 'DynamoDbStoreFail', {
+      cause: 'Database update failed',
+      error: 'DynamoDbStoreError',
+    });
+
+    const notificationFail = new Fail(this, 'NotificationFail', {
+      cause: 'Notification failed',
+      error: 'NotificationError',
+    });
+
     // Define the Step Functions state machine
     const stateMachine = new StateMachine(this, 'FileProcessingStateMachine', {
-      definitionBody: DefinitionBody.fromChainable(validateFileTask
-      .next(dataExtractionTask)
-      .next(dataTransformationTask)
-      .next(databaseUpdateTask)
-      .next(notificationTask)
+      definitionBody: DefinitionBody.fromChainable(
+        validateFileTask
+          .addCatch(fileValidationFail, {
+            errors: ['States.ALL'], // Catch all errors
+            resultPath: '$.errorInfo', // Store error info
+          })
+          .next(
+            dataExtractionTask
+              .addCatch(dataExtractionFail, {
+                errors: ['States.ALL'],
+                resultPath: '$.errorInfo',
+              })
+          )
+          .next(
+            dataTransformationTask
+              .addCatch(dataTransformationFail, {
+                errors: ['States.ALL'],
+                resultPath: '$.errorInfo',
+              })
+          )
+          .next(
+            dynamoDbStoreTask
+              .addCatch(dynamoDbStoreFail, {
+                errors: ['States.ALL'],
+                resultPath: '$.errorInfo',
+              })
+          )
+          .next(
+            notificationTask
+              .addCatch(notificationFail, {
+                errors: ['States.ALL'],
+                resultPath: '$.errorInfo',
+              })
+          )
       ),
-     });
+    });
 
     // Lambda function to handle S3 events
     const s3EventHandler = new NodejsFunction(this, 'S3EventHandler', {

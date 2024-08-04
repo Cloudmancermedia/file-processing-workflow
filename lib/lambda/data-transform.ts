@@ -1,4 +1,4 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { APIGatewayProxyHandler, Handler } from 'aws-lambda';
 
 interface ExtractedData {
   [key: string]: string | number;
@@ -19,10 +19,10 @@ const formatForDynamoDB = (item: ExtractedData) => {
   return formattedItem;
 };
 
-export const handler: APIGatewayProxyHandler = async (event) => {
-  const { data } = JSON.parse(event.body || '{}');
-
+export const handler: Handler = async (event: any) => {
+  
   try {
+    const { data } = event;
     const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {
