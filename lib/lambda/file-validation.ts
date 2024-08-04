@@ -16,26 +16,31 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     // Example validation: Check file size and type
     const maxFileSize = 1024 * 1024 * 10; // 10MB
-    const validFileTypes = ['image/jpeg', 'image/png'];
+    const validFileTypes = ['text/csv', 'application/csv'];
 
-    if (
-      headResult.ContentLength && 
-      headResult.ContentLength > maxFileSize
-    ) {
+    // Validate file size
+    if (headResult.ContentLength && headResult.ContentLength > maxFileSize) {
       throw new Error('File is too large');
     }
 
-    if (
-      headResult.ContentType &&
-      !validFileTypes.includes(headResult.ContentType)
-    ) {
-      throw new Error('Invalid file type');
+    // Validate file type
+    if (headResult.ContentType) {
+      if (!validFileTypes.includes(headResult.ContentType)) {
+        throw new Error('Invalid file type');
+      }
+      // Check for xlsx format
+      if (headResult.ContentType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+        throw new Error('XLSX format is not allowed');
+      }
+    } else {
+      throw new Error('Unable to determine file type');
     }
 
     return {
       statusCode: 200,
       body: JSON.stringify({ bucket, key }),
     };
+
   } catch (error) {
     console.error('File validation error:', error);
     return {
