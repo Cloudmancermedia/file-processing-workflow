@@ -1,4 +1,4 @@
-import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { AttributeType, TableV2 } from 'aws-cdk-lib/aws-dynamodb';
 import { Code, LayerVersion, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Bucket, EventType } from 'aws-cdk-lib/aws-s3';
@@ -23,8 +23,6 @@ export class FileProcessingWorkflowStack extends Stack {
 
     // SNS Topic for notifications
     const notificationTopic = new Topic(this, 'NotificationTopic');
-    // add email sub when ready to deploy
-    // notificationTopic.addSubscription(new EmailSubscription(''));
 
     // DynamoDB Table
     const table = new TableV2(this, 'DataTable', {
@@ -32,6 +30,8 @@ export class FileProcessingWorkflowStack extends Stack {
       tableName: 'file_processing_workflow_table',
       removalPolicy: RemovalPolicy.DESTROY,
     });
+
+    // Deploy and subscribe my email to the SNS topic
 
     const layer = new LayerVersion(
       this,
@@ -71,6 +71,7 @@ export class FileProcessingWorkflowStack extends Stack {
 
     const dynamoDbStoreFunction = new NodejsFunction(this, 'DynamoDbStoreFunction', {
       runtime: Runtime.NODEJS_20_X,
+      timeout: Duration.seconds(30),
       entry: 'lib/lambda/dynamodb-store.ts',
       environment: {
         TABLE_NAME: table.tableName,
