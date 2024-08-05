@@ -1,29 +1,27 @@
 import { SNS } from '@aws-sdk/client-sns';
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
+import { Handler } from 'aws-lambda';
+import { StepFunctionError } from './shared/errors';
 
 const sns = new SNS({});
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+export const handler: Handler = async (event: any) => {
   const topicArn = process.env.TOPIC_ARN as string;
   const message = 'File processing completed successfully.';
 
   try {
+    const { tableName, bucket, key } = event;
     const params = {
-      Message: message,
+      Message: `Message: ${message}\nTable: ${tableName}\nBucket: ${bucket}\nKey: ${key}`,
       TopicArn: topicArn,
     };
 
     await sns.publish(params);
 
     return {
-      statusCode: 200,
-      body: 'Notification sent',
+      message: `Notification sent. ${message}`
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Notification error:', error);
-    return {
-      statusCode: 500,
-      body: 'Notification failed',
-    };
+    throw new StepFunctionError(error);
   }
 };

@@ -19,11 +19,13 @@ const formatForDynamoDB = (item: ExtractedData) => {
 export const handler: Handler = async (event: any) => {
   
   try {
-    const { data } = event;
+    const { data, bucket, key } = event;
     const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {
-      data: transformedData 
+      data: transformedData,
+      bucket,
+      key 
     };
   } catch (error) {
     console.error('Data transformation error:', error);
