@@ -51,7 +51,11 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
         .on('error', reject);
     });
 
-    return { data: extractedData }
+    return JSON.stringify({ 
+      data: extractedData,
+      bucket,
+      key
+    })
 
   } catch (error: any) {
     console.error('Data extraction error:', error);
