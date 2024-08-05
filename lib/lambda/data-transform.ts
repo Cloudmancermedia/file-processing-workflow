@@ -1,13 +1,14 @@
 import { Handler } from 'aws-lambda';
 import { ExtractedData } from './shared/types';
+import { StepFunctionError } from './shared/errors';
 
 // Helper function to format data for DynamoDB
 const formatForDynamoDB = (item: ExtractedData) => {
-  const formattedItem: { [key: string]: { S?: string; N?: string } } = {};
+  const formattedItem: { [key: string]: { S?: string; N?: number } } = {};
 
   for (const key in item) {
     if (typeof item[key] === 'number') {
-      formattedItem[key] = { N: item[key].toString() };
+      formattedItem[key] = { N: item[key] };
     } else if (typeof item[key] === 'string') {
       formattedItem[key] = { S: item[key].toLowerCase() }; // Convert to lowercase
     }
@@ -23,15 +24,12 @@ export const handler: Handler = async (event: any) => {
     const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {
-      data: transformedData,
+      data: JSON.stringify(transformedData),
       bucket,
       key 
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Data transformation error:', error);
-    return {
-      statusCode: 500,
-      body: 'Data transformation failed',
-    };
+    throw new StepFunctionError(error);
   }
 };

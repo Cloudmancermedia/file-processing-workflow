@@ -1,19 +1,20 @@
-import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { Handler } from 'aws-lambda';
 import { DdbParams } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 
-// This seems weird
-const dynamoDbClient = new DynamoDB({});;
+const dynamoDbClient = new DynamoDBClient({});;
 
 export const handler: Handler = async (event: any) => {
   console.log('Event:', event);
 
   try {
-    const { data, bucket, key } = JSON.parse(event);
+    const { data, bucket, key } = event;
+    console.log('Event Data:', data);
+    const parsedData = JSON.parse(data);
+    console.log('Parsed Data:', parsedData);
     const tableName = process.env.TABLE_NAME as string;
-    for (const item of data) {
+    for (const item of parsedData) {
       const params: DdbParams = {
         TableName: tableName,
         Item: {
@@ -21,7 +22,7 @@ export const handler: Handler = async (event: any) => {
         },
       };
       console.log('Inserting data:', params);
-      await dynamoDbClient.send(new PutCommand(params));
+      await dynamoDbClient.send(new PutItemCommand(params));
     }
 
     return { 
