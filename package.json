@@ -5,9 +5,8 @@
     "file-processing-workflow": "bin/file-processing-workflow.js"
   },
   "scripts": {
-    "build": "tsc -p lib/lambda",
-    "watch": "tsc -w",
-    "cdk": "cdk deploy --profile cloudmancer"
+    "deploy": "cdk deploy --profile cloudmancer",
+    "layers": "cd lib/layers/nodejs && npm install && cd ../../.."
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.142",

@@ -37,9 +37,8 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
     }
 
     console.log('File validation successful.');
-    return {
-      body: { bucket, key }
-    };
+    
+    return { bucket, key };
 
   } catch (error: any) {
     console.error('File validation error was caught:', error);
