@@ -26,11 +26,12 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
     //custom for dealing with the BOM character
     const parser = csvParser({
       mapHeaders: ({ header, index }: { header: string; index: number }) => {
+        let transformedHeader = header;
         // Remove BOM from the first header if present
         if (index === 0 && header.startsWith('\ufeff')) {
-          return header.substring(1);
+          transformedHeader = header.substring(1);
         }
-        return header;
+        return transformedHeader.toLowerCase().replace(/\s+/g, '_');
       },
     });
 
@@ -51,11 +52,11 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
         .on('error', reject);
     });
 
-    return JSON.stringify({ 
+    return { 
       data: extractedData,
       bucket,
       key
-    })
+    }
 
   } catch (error: any) {
     console.error('Data extraction error:', error);
