@@ -1,25 +1,22 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from 'aws-lambda';
+import { Handler } from 'aws-lambda';
+import { DdbParams } from './shared/types';
 
+// This seems weird
 const dynamoDbClient = new DynamoDB({});
 const ddbDocClient = DynamoDBDocumentClient.from(dynamoDbClient);
 
-interface TransformedData {
-  fileId: string;
-  [key: string]: string;
-}
-
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
-  const { data } = JSON.parse(event.body || '{}');
-  const tableName = process.env.TABLE_NAME as string;
+export const handler: Handler = async (event: any) => {
+  console.log('Event:', event);
 
   try {
+    const { data } = event;
+    const tableName = process.env.TABLE_NAME as string;
     for (const item of data) {
-      const params = {
+      const params: DdbParams = {
         TableName: tableName,
         Item: {
-          fileId: item.fileId,
           ...item,
         },
       };

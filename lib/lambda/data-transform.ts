@@ -1,8 +1,5 @@
-import { APIGatewayProxyHandler, Handler } from 'aws-lambda';
-
-interface ExtractedData {
-  [key: string]: string | number;
-}
+import { Handler } from 'aws-lambda';
+import { ExtractedData } from './shared/types';
 
 // Helper function to format data for DynamoDB
 const formatForDynamoDB = (item: ExtractedData) => {
@@ -26,8 +23,7 @@ export const handler: Handler = async (event: any) => {
     const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {
-      statusCode: 200,
-      body: JSON.stringify({ data: transformedData }),
+      data: transformedData 
     };
   } catch (error) {
     console.error('Data transformation error:', error);

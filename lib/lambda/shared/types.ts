@@ -1,11 +1,22 @@
-// Define the custom event type for the Lambda handler
 export interface S3Event {
   bucket: string;
   key: string;
 }
 
-// Define the custom result type for the Lambda handler
 export interface ValidationResult {
   bucket: string;
   key: string;
 };
+
+export interface ExtractedData {
+  [key: string]: string | number;
+}
+
+export interface TransformedData {
+  [key: string]: string;
+}
+export interface DdbParams {
+  TableName: string;
+  Item: TransformedData;
+}
+
