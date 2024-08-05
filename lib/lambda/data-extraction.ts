@@ -3,6 +3,7 @@ import { Handler } from 'aws-lambda';
 import { csvParser } from 'csv-parser';
 import { Readable } from 'stream';
 import { ValidationResult } from './shared/types';
+import { StepFunctionError } from './shared/errors';
 
 const s3 = new S3({});
 
@@ -34,14 +35,10 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
     });
 
     return {
-      statusCode: 200,
       body: { data: extractedData },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Data extraction error:', error);
-    return {
-      statusCode: 500,
-      body: 'Data extraction failed',
-    };
+    throw new StepFunctionError(error);
   }
 };
