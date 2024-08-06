@@ -1,5 +1,5 @@
 import { Handler } from 'aws-lambda';
-import { ExtractedData } from './shared/types';
+import { ExtractedData, ExtractionResult, TransformResult } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 
 // Helper function to format data for DynamoDB
@@ -17,10 +17,12 @@ const formatForDynamoDB = (item: ExtractedData) => {
   return formattedItem;
 };
 
-export const handler: Handler = async (event: any) => {
-  
+export const handler: Handler<ExtractionResult, TransformResult> = async (event: ExtractionResult): Promise<TransformResult> => {
+  console.log('Event:', event);
+
   try {
-    const { data, bucket, key } = event;
+    const { bucket, key } = event;
+    const data = JSON.parse(event.data) as ExtractedData[];
     const transformedData = data.map((item: ExtractedData) => formatForDynamoDB(item));
 
     return {

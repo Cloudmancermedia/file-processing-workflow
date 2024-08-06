@@ -1,11 +1,11 @@
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { Handler } from 'aws-lambda';
-import { DdbParams } from './shared/types';
+import { DatabaseUpdateResult, DdbParams, TransformResult } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 
 const dynamoDbClient = new DynamoDBClient({});;
 
-export const handler: Handler = async (event: any) => {
+export const handler: Handler<TransformResult, DatabaseUpdateResult> = async (event: TransformResult): Promise<DatabaseUpdateResult> => {
   console.log('Event:', event);
 
   try {
