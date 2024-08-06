@@ -1,10 +1,11 @@
 import { SNS } from '@aws-sdk/client-sns';
 import { Handler } from 'aws-lambda';
 import { StepFunctionError } from './shared/errors';
+import { DatabaseUpdateResult, NotificationResult } from './shared/types';
 
 const sns = new SNS({});
 
-export const handler: Handler = async (event: any) => {
+export const handler: Handler<DatabaseUpdateResult, NotificationResult> = async (event: DatabaseUpdateResult): Promise<NotificationResult> => {
   const topicArn = process.env.TOPIC_ARN as string;
   const message = 'File processing completed successfully.';
 

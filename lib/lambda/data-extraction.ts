@@ -2,13 +2,13 @@ import { S3 } from '@aws-sdk/client-s3';
 import { Handler } from 'aws-lambda';
 import csvParser from 'csv-parser'; 
 import { Readable } from 'stream';
-import { ValidationResult } from './shared/types';
+import { ExtractionResult, ValidationResult } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 import { ExtractedData } from './shared/types';
 
 const s3 = new S3({});
 
-export const handler: Handler<ValidationResult> = async (event: ValidationResult) => {
+export const handler: Handler<ValidationResult, ExtractionResult> = async (event: ValidationResult): Promise<ExtractionResult> => {
   console.log('Event:', event);
   
   try {
@@ -53,7 +53,7 @@ export const handler: Handler<ValidationResult> = async (event: ValidationResult
     });
 
     return { 
-      data: extractedData,
+      data: JSON.stringify(extractedData),
       bucket,
       key
     }

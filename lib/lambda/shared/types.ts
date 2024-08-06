@@ -3,10 +3,22 @@ export interface S3Event {
   key: string;
 }
 
-export interface ValidationResult {
-  bucket: string;
-  key: string;
-};
+export interface ValidationResult extends S3Event {};
+
+export interface ExtractionResult extends ValidationResult {
+  data: string;
+}
+
+export interface TransformResult extends ExtractionResult {}
+
+export interface DatabaseUpdateResult extends ValidationResult {
+  message: string;
+  tableName: string;
+}
+
+export interface NotificationResult {
+  message: string;
+}
 
 export interface ExtractedData {
   [key: string]: string | number;

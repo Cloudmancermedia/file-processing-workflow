@@ -1,11 +1,11 @@
 import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Handler } from 'aws-lambda';
-import { ValidationResult } from './shared/types';
+import { S3Event, ValidationResult } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 
 const s3 = new S3Client({});
 
-export const handler: Handler<ValidationResult> = async (event: ValidationResult) => {
+export const handler: Handler<S3Event, ValidationResult> = async (event: S3Event): Promise<ValidationResult> => {
   console.log('Event:', event);
   
   try {
