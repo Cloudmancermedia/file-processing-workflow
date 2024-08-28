@@ -1,10 +1,10 @@
 import { Handler } from 'aws-lambda';
-import { ExtractedData, ExtractionResult, TransformResult } from './shared/types';
+import { ExtractedData, ExtractionResult, TransformResult, FormattedItem } from './shared/types';
 import { StepFunctionError } from './shared/errors';
 
 // Helper function to format data for DynamoDB
 const formatForDynamoDB = (item: ExtractedData) => {
-  const formattedItem: { [key: string]: { S?: string; N?: string } } = {};
+  const formattedItem: FormattedItem = {};
 
   for (const key in item) {
     if (typeof item[key] === 'number') {
