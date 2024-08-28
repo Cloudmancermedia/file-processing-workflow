@@ -36,7 +36,7 @@ export class FileProcessingWorkflowStack extends Stack {
       this,
       "Layer",
       {
-        code: Code.fromAsset("lib/layers"),
+        code: Code.fromAsset("lib/lambda/layers"),
         compatibleRuntimes: [ Runtime.NODEJS_20_X],
         layerVersionName: "NodeJsLayer"
       }

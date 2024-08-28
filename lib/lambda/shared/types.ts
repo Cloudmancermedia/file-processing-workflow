@@ -24,6 +24,12 @@ export interface ExtractedData {
   [key: string]: string | number;
 }
 
+export interface FormattedItem {
+  [key: string]: {  
+    S?: string;
+    N?: string
+  }
+}
 export interface TransformedData {
   [key: string]: string;
 }
@@ -31,4 +37,3 @@ export interface DdbParams {
   TableName: string;
   Item: TransformedData;
 }
-
